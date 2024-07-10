@@ -47,7 +47,7 @@ write_csv(data, "data_combined.csv")
 
 Final tally after following code: 19,057 rows, 197 columns
 ```{r Data adjustments  }
-
+?
 library(tidyverse)
 library(lubridate)
 
@@ -92,6 +92,84 @@ Adjusted_Data <- full %>%
 
 write_csv(Adjusted_Data,
           "MF_Fee_Report_20240710_ag.csv")
+
+```
+
+
+```{Active funds}
+
+
+ActiveFunds <- Adjusted_Data %>%
+  filter(
+    Net_Asst_2023_AVG != 0 &
+      Index..Fund != "Yes" &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  group_by(Firm.Name.Mod) %>%
+  mutate(
+    Count = n(),
+    Sum_Assets_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE)
+  ) %>%
+  ungroup() %>% 
+  filter(Count >= 50 &
+           Sum_Assets_2023 >= 2.5e+10
+  )
+
+summaryinfo <- function(x) {
+  summarise(x,
+            Count = n(),
+            Sum_Assts_Wted_2021 = sum(Asst_By_Fee_2021, na.rm = TRUE),
+            Sum_Assets_2021 = sum(Net_Asst_2021_AVG, na.rm = TRUE),
+            Fee_Wted_2021 = Sum_Assts_Wted_2021 / Sum_Assets_2021,
+            Sum_Assts_Wted_2022 = sum(Asst_By_Fee_2022, na.rm = TRUE),
+            Sum_Assets_2022 = sum(Net_Asst_2022_AVG, na.rm = TRUE),
+            Fee_Wted_2022 = Sum_Assts_Wted_2022 / Sum_Assets_2022,
+            Sum_Assts_Wted_2023 = sum(Asst_By_Fee_2023, na.rm = TRUE),
+            Sum_Assets_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+            Fee_Wted_2023 = Sum_Assts_Wted_2023 / Sum_Assets_2023
+  )
+}
+
+Active_Fees <- ActiveFunds %>%
+  group_by(Firm.Name.Mod) %>%
+  summaryinfo()
+
+write_csv(Active_Fees,
+          "fees_activefunds_firm.csv")
+
+Active_HighFees <- Active_Fees %>%
+  arrange(desc(Fee_Wted_2023)) %>%
+  top_n(10, Fee_Wted_2023)
+
+Active_LowFees <- Active_Fees %>%
+  arrange(Fee_Wted_2023) %>%
+  top_n(-10, Fee_Wted_2023)
+```
+
+
+```{summary data for active funds}
+
+Active_Summary <- ActiveFunds %>% 
+  ungroup() %>%
+  summaryinfo() %>%
+  select(
+    1,
+    3:4,
+    6:7,
+    9:10
+  ) %>% 
+  gather(
+    key = "Field",
+    value, "Count",
+    2:7
+  )
+
+write_csv(Active_Summary,
+          "fees_activefunds_summary.csv")
+```
+
+```{Fees by Type of Active Fund Category}
 
 ```
 ## Including Plots
