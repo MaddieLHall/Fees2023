@@ -15,6 +15,8 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r pulling the data from folder, and cleaning}
+library(tidyverse)
+library(lubridate)
 
 data_path <- "data"   # path to the data
 files <- dir(data_path, pattern = "\\.csv$", full.names = TRUE)
@@ -40,7 +42,7 @@ data <- files %>%
 
 warnings <- warnings(data)
 
-write_csv(data, "data_combined.csv")
+write_csv(data, "results/general/data_combined.csv")
 
 ```
 
@@ -52,7 +54,7 @@ library(tidyverse)
 library(lubridate)
 
 
-full <- read_csv("data_combined.csv",
+full <- read_csv("results/general/data_combined.csv",
                  guess_max = 20000)
 
 
@@ -91,7 +93,7 @@ Adjusted_Data <- full %>%
   )
 
 write_csv(Adjusted_Data,
-          "MF_Fee_Report_20240710_ag.csv")
+          "results/general/MF_Fee_Report_20240710_ag.csv")
 
 ```
 
@@ -136,7 +138,7 @@ Active_Fees <- ActiveFunds %>%
   summaryinfo()
 
 write_csv(Active_Fees,
-          "fees_activefunds_firm.csv")
+          "results/active/fees_activefunds_firm.csv")
 
 Active_HighFees <- Active_Fees %>%
   arrange(desc(Fee_Wted_2023)) %>%
@@ -166,7 +168,7 @@ Active_Summary <- ActiveFunds %>%
   )
 
 write_csv(Active_Summary,
-          "fees_activefunds_summary.csv")
+          "results/active/fees_activefunds_summary.csv")
 ```
 
 ```{Fees by Type of Active Fund Category}
@@ -199,7 +201,7 @@ Active_Cat <- ActiveFunds %>%
   )
 
 write_csv(Active_Cat,
-          "cat_activefunds_firm.csv")
+          "results/active/cat_activefunds_firm.csv")
 
 Active_Cat_Sum <- Active_Cat %>%
   group_by(US.Category.Group) %>%  
@@ -237,45 +239,45 @@ Active_Cat_Pct <- Active_Cat %>%
   # group_by(Firm.Name.Mod) %>%
   arrange(-Fee_Wted_2023, .by_group = TRUE)
 
-# write_csv(Active_Cat_Pct,
-#           "cat_activefunds_highlow.csv")
+write_csv(Active_Cat_Pct,
+          "results/active/cat_activefunds_highlow.csv")
 ```
 
 ```{Fees by Type of Morningstar Fund Category (ACTIVE)}
 Active_MSCat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, Morningstar.Category) %>% 
   summarise(
-    Asst_Wted_Cat_2020 = sum(Asst_By_Fee_2020, na.rm = TRUE),
-    Sum_Assets_Cat_2020 = sum(Net_Asst_2020_AVG, na.rm = TRUE),
-    Fee_Wted_Cat_2020 = Asst_Wted_Cat_2020 / Sum_Assets_Cat_2020,
-    Asst_Wted_Cat_2021 = sum(Asst_By_Fee_2021, na.rm = TRUE),
-    Sum_Assets_Cat_2021 = sum(Net_Asst_2021_AVG, na.rm = TRUE),
-    Fee_Wted_Cat_2021 = Asst_Wted_Cat_2021 / Sum_Assets_Cat_2021,
+    Asst_Wted_Cat_2022 = sum(Asst_By_Fee_2022, na.rm = TRUE),
+    Sum_Assets_Cat_2022 = sum(Net_Asst_2022_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2022 = Asst_Wted_Cat_2022 / Sum_Assets_Cat_2022,
+    Asst_Wted_Cat_2023 = sum(Asst_By_Fee_2023, na.rm = TRUE),
+    Sum_Assets_Cat_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2023 = Asst_Wted_Cat_2023 / Sum_Assets_Cat_2023,
     Cat_Count = n()
   ) %>% 
   group_by(Firm.Name.Mod) %>% 
   mutate(
     ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
-    Sum_Assts_Wted_2020 = sum(Asst_Wted_Cat_2020, na.rm = TRUE),
-    Sum_Assets_2020 = sum(Sum_Assets_Cat_2020, na.rm = TRUE),
-    Fee_Wted_2020 = Sum_Assts_Wted_2020 / Sum_Assets_2020,
-    pct_assets_2020 = (Sum_Assets_Cat_2020 / Sum_Assets_2020) * 100,
-    Sum_Assts_Wted_2021 = sum(Asst_Wted_Cat_2021, na.rm = TRUE),
-    Sum_Assets_2021 = sum(Sum_Assets_Cat_2021, na.rm = TRUE),
-    Fee_Wted_2021 = Sum_Assts_Wted_2021 / Sum_Assets_2021,
-    pct_assets_2021 = (Sum_Assets_Cat_2021 / Sum_Assets_2021) * 100
+    Sum_Assts_Wted_2022 = sum(Asst_Wted_Cat_2022, na.rm = TRUE),
+    Sum_Assets_2022 = sum(Sum_Assets_Cat_2022, na.rm = TRUE),
+    Fee_Wted_2022 = Sum_Assts_Wted_2022 / Sum_Assets_2022,
+    pct_assets_2022 = (Sum_Assets_Cat_2022 / Sum_Assets_2022) * 100,
+    Sum_Assts_Wted_2023 = sum(Asst_Wted_Cat_2023, na.rm = TRUE),
+    Sum_Assets_2023 = sum(Sum_Assets_Cat_2023, na.rm = TRUE),
+    Fee_Wted_2023 = Sum_Assts_Wted_2023 / Sum_Assets_2023,
+    pct_assets_2023 = (Sum_Assets_Cat_2023 / Sum_Assets_2023) * 100
   )
 
 write_csv(Active_MSCat,
-          "MScat_activefunds.csv")
+          "results/active/MScat_activefunds.csv")
 
 
 Active_MSCat_Sum <- Active_MSCat %>%
   group_by(Morningstar.Category) %>%  
   summarise(
     SHARECLASSES = sum(Cat_Count),
-    FEE = round((sum(Asst_Wted_Cat_2021)/sum(Sum_Assets_Cat_2021)),2),
-    ASSETS = sum(Sum_Assets_Cat_2021)
+    FEE = round((sum(Asst_Wted_Cat_2023)/sum(Sum_Assets_Cat_2023)),2),
+    ASSETS = sum(Sum_Assets_Cat_2023)
   ) %>%  
   mutate(
     pct = round(ASSETS / sum(ASSETS)*100,2),
@@ -290,19 +292,19 @@ Active_MSCat_Pct <- Active_MSCat %>%
     Firm.Name.Mod,
     Morningstar.Category,
     Cat_Count,
-    Sum_Assets_Cat_2021,
-    Sum_Assets_2021,
-    Fee_Wted_Cat_2021,
-    Fee_Wted_2021,
-    pct_assets_2021
+    Sum_Assets_Cat_2023,
+    Sum_Assets_2023,
+    Fee_Wted_Cat_2023,
+    Fee_Wted_2023,
+    pct_assets_2023
   ) %>%
   filter(Firm.Name.Mod %in% Lowcost_Active_Firms |
            Firm.Name.Mod %in% Highcost_Active_Firms) %>%
   group_by(Firm.Name.Mod) %>%
-  arrange(-Fee_Wted_2021, .by_group = TRUE)
+  arrange(-Fee_Wted_2023, .by_group = TRUE)
 
 write_csv(Active_MSCat_Pct,
-          "MScat_activefunds_highlow.csv")
+          "results/active/MScat_activefunds_highlow.csv")
 ```
 
 ```{Fee changes among active share classes}
@@ -347,15 +349,15 @@ Active_Summary_Shareclass <- Active_Shareclass %>%
 
 write_csv(
   Active_Summary_Shareclass,
-  "shareclass_changes_activefunds.csv"
+  "results/active/shareclass_changes_activefunds.csv"
 )
 ```
 ## Including Plots
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+# ```{r pressure, echo=FALSE}
+# plot(pressure)
+# ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
