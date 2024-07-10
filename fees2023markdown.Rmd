@@ -14,10 +14,85 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r pulling the data from folder, and cleaning}
+
+data_path <- "data"   # path to the data
+files <- dir(data_path, pattern = "\\.csv$", full.names = TRUE)
+
+READ <- function(FILE) {
+  read_csv(FILE,
+           trim_ws = TRUE,
+           guess_max = nrow(read_csv(FILE)) -12,
+           n_max = nrow(read_csv(FILE)) -12,
+           # col_types = cols(
+           #   `Inception \nDate` = col_date("%m/%d/%Y"),
+           #   `Listing \nDate`= col_date("%m/%d/%Y")
+           # )
+        ) %>%
+    mutate(filename = basename(FILE)) %>%
+    rename_all(make.names)
+}
+
+data <- files %>%
+  map(READ) %>%    # read in all the files individually, using
+  # the function READ from above
+  reduce(full_join, by=)        # reduce with full_join into one dataframe
+
+warnings <- warnings(data)
+
+write_csv(data, "data_combined.csv")
+
 ```
 
+
+```{r Data adjustments  }
+
+library(tidyverse)
+library(lubridate)
+
+
+full <- read_csv("data_combined.csv",
+                 guess_max = 20000)
+
+
+Adjusted_Data <- full %>%
+  rename_all(make.names) %>%
+  filter(Fund.of..Funds != "Yes",
+         US.Category.Group != "Money Market" | is.na(US.Category.Group),
+         is.na(Obsolete..Date)
+  ) %>%
+  mutate(
+    Firm.Name.Mod = case_when(
+      Branding.Name == "iShares" ~ "BlackRock",
+      Branding.Name == "SPDR State Street Global Advisors" ~ "State Street Global Advisors",
+      Branding.Name == "Calvert Research and Management" ~ "Morgan Stanley",
+      Branding.Name == "Eaton Vance" ~ "Morgan Stanley",
+      Branding.Name == "Nuveen" ~ "TIAA Investments",
+      Branding.Name %in% c("Harding Loevner", "Third Avenue", "Tweedy, Browner") ~ "AMG",
+      Branding.Name %in% "Amundi" ~ "Pioneer Investments",
+      grepl("AllianzGI", Name) ~ "AllianzGI_",
+      TRUE ~ as.character(Firm.Name)
+    )
+  ) %>%
+  mutate(
+    Net_Asst_2021_AVG = rowMeans(.[, 152:163], na.rm = TRUE),
+    Net_Asst_2022_AVG = rowMeans(.[, 164:175], na.rm = TRUE),
+    Net_Asst_2023_AVG = rowMeans(.[, 176:187], na.rm = TRUE),
+    Asst_By_Fee_2021 = Net_Asst_2021_AVG * Annual.Report.Adjusted.Expense.Ratio..Year2021,
+    Asst_By_Fee_2022 = Net_Asst_2022_AVG * Annual.Report.Adjusted.Expense.Ratio..Year2022,
+    Asst_By_Fee_2023 = Net_Asst_2023_AVG * Annual.Report.Adjusted.Expense.Ratio..Year2023,
+    Pct_Change_2021_2022 = (
+      Annual.Report.Adjusted.Expense.Ratio..Year2022 - Annual.Report.Adjusted.Expense.Ratio..Year2021
+    ) / Annual.Report.Adjusted.Expense.Ratio..Year2021 * 100,
+    Pct_Change_2022_2023 = (
+      Annual.Report.Adjusted.Expense.Ratio..Year2023 - Annual.Report.Adjusted.Expense.Ratio..Year2022
+    ) / Annual.Report.Adjusted.Expense.Ratio..Year2022 * 100
+  )
+
+write_csv(Adjusted_Data,
+          "MF_Fee_Report_20240710_ag.csv")
+
+```
 ## Including Plots
 
 You can also embed plots, for example:
