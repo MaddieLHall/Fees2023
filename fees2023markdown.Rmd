@@ -171,6 +171,184 @@ write_csv(Active_Summary,
 
 ```{Fees by Type of Active Fund Category}
 
+Active_Cat <- ActiveFunds %>% 
+  group_by(Firm.Name.Mod, US.Category.Group) %>% 
+  summarise(
+    Asst_Wted_Cat_2021 = sum(Asst_By_Fee_2021, na.rm = TRUE),
+    Sum_Assets_Cat_2021 = sum(Net_Asst_2021_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2021 = Asst_Wted_Cat_2021 / Sum_Assets_Cat_2021,
+    Asst_Wted_Cat_2022 = sum(Asst_By_Fee_2022, na.rm = TRUE),
+    Sum_Assets_Cat_2022 = sum(Net_Asst_2022_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2022 = Asst_Wted_Cat_2022 / Sum_Assets_Cat_2022,
+    Asst_Wted_Cat_2023 = sum(Asst_By_Fee_2023, na.rm = TRUE),
+    Sum_Assets_Cat_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2023 = Asst_Wted_Cat_2023 / Sum_Assets_Cat_2023,
+    Cat_Count = n()
+  ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  mutate(
+    ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
+    Sum_Assts_Wted_2022 = sum(Asst_Wted_Cat_2022, na.rm = TRUE),
+    Sum_Assets_2022 = sum(Sum_Assets_Cat_2022, na.rm = TRUE),
+    Fee_Wted_2022 = Sum_Assts_Wted_2022 / Sum_Assets_2022,
+    pct_assets_2022 = (Sum_Assets_Cat_2022 / Sum_Assets_2022) * 100,
+    Sum_Assts_Wted_2023 = sum(Asst_Wted_Cat_2023, na.rm = TRUE),
+    Sum_Assets_2023 = sum(Sum_Assets_Cat_2023, na.rm = TRUE),
+    Fee_Wted_2023 = Sum_Assts_Wted_2023 / Sum_Assets_2023,
+    pct_assets_2023 = (Sum_Assets_Cat_2023 / Sum_Assets_2023) * 100
+  )
+
+write_csv(Active_Cat,
+          "cat_activefunds_firm.csv")
+
+Active_Cat_Sum <- Active_Cat %>%
+  group_by(US.Category.Group) %>%  
+  summarise(
+    SHARECLASSES = sum(Cat_Count),
+    FEE = round((sum(Asst_Wted_Cat_2023)/sum(Sum_Assets_Cat_2023)),2),
+    ASSETS = sum(Sum_Assets_Cat_2023)
+  ) %>%  
+  mutate(
+    pct = round(ASSETS / sum(ASSETS)*100,2)
+  )
+
+Lowcost_Active_Firms <- Active_LowFees$Firm.Name.Mod
+Highcost_Active_Firms <- Active_HighFees$Firm.Name.Mod
+
+Active_Cat_Pct <- Active_Cat %>%
+  select(
+    Firm.Name.Mod,
+    US.Category.Group,
+    Cat_Count,
+    Sum_Assets_Cat_2023,
+    Sum_Assets_2023,
+    Fee_Wted_Cat_2023,
+    Fee_Wted_2023,
+    pct_assets_2023
+  ) %>%
+  mutate(Type =
+           case_when(
+             grepl("Equity", US.Category.Group) ~ "Equity",
+             grepl("Bond", US.Category.Group) ~ "Bond",
+             TRUE ~ "Other"
+           )) %>%
+  # filter(Firm.Name.Mod %in% Lowcost_Active_Firms |
+  #          Firm.Name.Mod %in% Highcost_Active_Firms) %>%
+  # group_by(Firm.Name.Mod) %>%
+  arrange(-Fee_Wted_2023, .by_group = TRUE)
+
+# write_csv(Active_Cat_Pct,
+#           "cat_activefunds_highlow.csv")
+```
+
+```{Fees by Type of Morningstar Fund Category (ACTIVE)}
+Active_MSCat <- ActiveFunds %>% 
+  group_by(Firm.Name.Mod, Morningstar.Category) %>% 
+  summarise(
+    Asst_Wted_Cat_2020 = sum(Asst_By_Fee_2020, na.rm = TRUE),
+    Sum_Assets_Cat_2020 = sum(Net_Asst_2020_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2020 = Asst_Wted_Cat_2020 / Sum_Assets_Cat_2020,
+    Asst_Wted_Cat_2021 = sum(Asst_By_Fee_2021, na.rm = TRUE),
+    Sum_Assets_Cat_2021 = sum(Net_Asst_2021_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2021 = Asst_Wted_Cat_2021 / Sum_Assets_Cat_2021,
+    Cat_Count = n()
+  ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  mutate(
+    ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
+    Sum_Assts_Wted_2020 = sum(Asst_Wted_Cat_2020, na.rm = TRUE),
+    Sum_Assets_2020 = sum(Sum_Assets_Cat_2020, na.rm = TRUE),
+    Fee_Wted_2020 = Sum_Assts_Wted_2020 / Sum_Assets_2020,
+    pct_assets_2020 = (Sum_Assets_Cat_2020 / Sum_Assets_2020) * 100,
+    Sum_Assts_Wted_2021 = sum(Asst_Wted_Cat_2021, na.rm = TRUE),
+    Sum_Assets_2021 = sum(Sum_Assets_Cat_2021, na.rm = TRUE),
+    Fee_Wted_2021 = Sum_Assts_Wted_2021 / Sum_Assets_2021,
+    pct_assets_2021 = (Sum_Assets_Cat_2021 / Sum_Assets_2021) * 100
+  )
+
+write_csv(Active_MSCat,
+          "MScat_activefunds.csv")
+
+
+Active_MSCat_Sum <- Active_MSCat %>%
+  group_by(Morningstar.Category) %>%  
+  summarise(
+    SHARECLASSES = sum(Cat_Count),
+    FEE = round((sum(Asst_Wted_Cat_2021)/sum(Sum_Assets_Cat_2021)),2),
+    ASSETS = sum(Sum_Assets_Cat_2021)
+  ) %>%  
+  mutate(
+    pct = round(ASSETS / sum(ASSETS)*100,2),
+    RANK = rank(-FEE)
+  )
+
+Lowcost_Active_Firms <- Active_LowFees$Firm.Name.Mod
+Highcost_Active_Firms <- Active_HighFees$Firm.Name.Mod
+
+Active_MSCat_Pct <- Active_MSCat %>%
+  select(
+    Firm.Name.Mod,
+    Morningstar.Category,
+    Cat_Count,
+    Sum_Assets_Cat_2021,
+    Sum_Assets_2021,
+    Fee_Wted_Cat_2021,
+    Fee_Wted_2021,
+    pct_assets_2021
+  ) %>%
+  filter(Firm.Name.Mod %in% Lowcost_Active_Firms |
+           Firm.Name.Mod %in% Highcost_Active_Firms) %>%
+  group_by(Firm.Name.Mod) %>%
+  arrange(-Fee_Wted_2021, .by_group = TRUE)
+
+write_csv(Active_MSCat_Pct,
+          "MScat_activefunds_highlow.csv")
+```
+
+```{Fee changes among active share classes}
+Active_Shareclass <- Adjusted_Data %>%
+  filter(
+    Annual.Report.Adjusted.Expense.Ratio..Year2022 != 0 &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2022) &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Index..Fund == "No" &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  mutate(
+    FeeChange =
+      cut(
+        Pct_Change_2022_2023,
+        breaks = c(-Inf,-0.001, 0, Inf),
+        labels = c("Cut", "No Change", "Hike"),
+        include.lowest = TRUE,
+        right = TRUE
+      )
+  )
+
+Active_Summary_Shareclass <- Active_Shareclass %>%
+  group_by(Firm.Name.Mod,
+           FeeChange) %>%
+  summarise(count = n(),
+            Sum_Assets = sum(Net_Asst_2023_AVG, na.rm = TRUE)
+  ) %>%
+  group_by(Firm.Name.Mod) %>%
+  mutate(
+    total_assets = sum(Sum_Assets),
+    assets_pct = Sum_Assets / total_assets * 100,
+    total_count = sum(count),
+    count_pct = count / total_count * 100
+  ) %>%
+  filter(total_count >= 50 &
+           total_assets >= 2.5e+10
+  )
+
+## `summarise()` has grouped output by 'Firm.Name.Mod'. You can override using the
+## `.groups` argument.
+
+write_csv(
+  Active_Summary_Shareclass,
+  "shareclass_changes_activefunds.csv"
+)
 ```
 ## Including Plots
 
