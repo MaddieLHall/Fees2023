@@ -45,6 +45,7 @@ write_csv(data, "data_combined.csv")
 ```
 
 
+Final tally after following code: 19,057 rows, 197 columns
 ```{r Data adjustments  }
 
 library(tidyverse)
