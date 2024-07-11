@@ -17,6 +17,8 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r pulling the data from folder, and cleaning}
 library(tidyverse)
 library(lubridate)
+library(DT)
+library(waffle)
 
 data_path <- "data"   # path to the data
 files <- dir(data_path, pattern = "\\.csv$", full.names = TRUE)
@@ -42,19 +44,15 @@ data <- files %>%
 
 warnings <- warnings(data)
 
-write_csv(data, "results/general/data_combined.csv")
+write_csv(data, "data/results/general/data_combined.csv")
 
 ```
 
 
 Final tally after following code: 19,057 rows, 197 columns
 ```{r Data adjustments  }
-?
-library(tidyverse)
-library(lubridate)
 
-
-full <- read_csv("results/general/data_combined.csv",
+full <- read_csv("data/results/general/data_combined.csv",
                  guess_max = 20000)
 
 
@@ -93,12 +91,12 @@ Adjusted_Data <- full %>%
   )
 
 write_csv(Adjusted_Data,
-          "results/general/MF_Fee_Report_20240710_ag.csv")
+          "data/results/general/MF_Fee_Report_20240710_ag.csv")
 
 ```
 
 
-```{Active funds}
+```{r Active funds}
 
 
 ActiveFunds <- Adjusted_Data %>%
@@ -138,7 +136,7 @@ Active_Fees <- ActiveFunds %>%
   summaryinfo()
 
 write_csv(Active_Fees,
-          "results/active/fees_activefunds_firm.csv")
+          "data/results/active/fees_activefunds_firm.csv")
 
 Active_HighFees <- Active_Fees %>%
   arrange(desc(Fee_Wted_2023)) %>%
@@ -150,7 +148,7 @@ Active_LowFees <- Active_Fees %>%
 ```
 
 
-```{summary data for active funds}
+```{r summary data for active funds}
 
 Active_Summary <- ActiveFunds %>% 
   ungroup() %>%
@@ -168,10 +166,10 @@ Active_Summary <- ActiveFunds %>%
   )
 
 write_csv(Active_Summary,
-          "results/active/fees_activefunds_summary.csv")
+          "data/results/active/fees_activefunds_summary.csv")
 ```
 
-```{Fees by Type of Active Fund Category}
+```{r Fees by Type of Active Fund Category}
 
 Active_Cat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, US.Category.Group) %>% 
@@ -201,7 +199,7 @@ Active_Cat <- ActiveFunds %>%
   )
 
 write_csv(Active_Cat,
-          "results/active/cat_activefunds_firm.csv")
+          "data/results/active/cat_activefunds_firm.csv")
 
 Active_Cat_Sum <- Active_Cat %>%
   group_by(US.Category.Group) %>%  
@@ -240,10 +238,10 @@ Active_Cat_Pct <- Active_Cat %>%
   arrange(-Fee_Wted_2023, .by_group = TRUE)
 
 write_csv(Active_Cat_Pct,
-          "results/active/cat_activefunds_highlow.csv")
+          "data/results/active/cat_activefunds_highlow.csv")
 ```
 
-```{Fees by Type of Morningstar Fund Category (ACTIVE)}
+```{r Fees by Type of Morningstar Fund Category (ACTIVE)}
 Active_MSCat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, Morningstar.Category) %>% 
   summarise(
@@ -269,7 +267,7 @@ Active_MSCat <- ActiveFunds %>%
   )
 
 write_csv(Active_MSCat,
-          "results/active/MScat_activefunds.csv")
+          "data/results/active/MScat_activefunds.csv")
 
 
 Active_MSCat_Sum <- Active_MSCat %>%
@@ -304,10 +302,10 @@ Active_MSCat_Pct <- Active_MSCat %>%
   arrange(-Fee_Wted_2023, .by_group = TRUE)
 
 write_csv(Active_MSCat_Pct,
-          "results/active/MScat_activefunds_highlow.csv")
+          "data/results/active/MScat_activefunds_highlow.csv")
 ```
 
-```{Fee changes among active share classes}
+```{r Fee changes among active share classes}
 Active_Shareclass <- Adjusted_Data %>%
   filter(
     Annual.Report.Adjusted.Expense.Ratio..Year2022 != 0 &
@@ -349,9 +347,431 @@ Active_Summary_Shareclass <- Active_Shareclass %>%
 
 write_csv(
   Active_Summary_Shareclass,
-  "results/active/shareclass_changes_activefunds.csv"
+  "data/results/active/shareclass_changes_activefunds.csv"
 )
 ```
+
+Now turning to Passive Fees:
+
+```{r Fund families with the lowest/highes fees across passive products}
+PassiveFunds <- Adjusted_Data %>%
+  filter(
+    Net_Asst_2023_AVG != 0 &
+      Index..Fund != "No" &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  group_by(Firm.Name.Mod) %>%
+  mutate(
+    Count = n(),
+    Sum_Assets_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE)
+  ) %>%
+  ungroup() %>% 
+  filter(Count >= 10,
+         Sum_Assets_2023 > 0
+  )
+
+Passive_Fees <- PassiveFunds %>%
+  group_by(Firm.Name.Mod) %>%
+  summaryinfo()
+
+write_csv(Passive_Fees,
+          "data/results/passive/fees_passivefunds_firm.csv")
+
+
+Passive_HighFees <- Passive_Fees %>%
+  arrange(desc(Fee_Wted_2023)) %>%
+  top_n(10, Fee_Wted_2023)
+
+Passive_LowFees <- Passive_Fees %>%
+  arrange(Fee_Wted_2023) %>%
+  top_n(-10, Fee_Wted_2023)
+```
+
+```{r Passive Summary}
+
+Passive_Summary <- PassiveFunds %>% 
+  ungroup() %>%
+  summaryinfo() %>%
+  select(
+    1,
+    3:4,
+    6:7,
+    9:10
+  ) %>% 
+  gather(
+    key = "Field",
+    value, "Count",
+    2:7
+  )
+
+write_csv(Passive_Summary,
+          "data/results/passive/fees_activefunds_summary.csv")
+
+datatable(Passive_Summary)
+```
+
+```{r past passive years}
+
+PassiveFunds_Past <- Adjusted_Data %>%
+  filter(
+    Net_Asst_2023_AVG != 0 &
+      Index..Fund != "No" &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2022) &
+      Investment.Type == "Open-End Fund"
+  )
+
+Passive_Fees_Past <- PassiveFunds_Past %>%
+  group_by(Firm.Name.Mod) %>%
+  summaryinfo() %>%
+  filter(Count >= 10 &
+           Sum_Assets_2023 > 0)
+
+write_csv(
+  Passive_Fees_Past,
+  "data/results/passive/past_fees_passivefunds_firm.csv"
+)
+
+
+Passive_HighFees_Past <- Passive_Fees_Past %>%
+  arrange(desc(Fee_Wted_2023)) %>%
+  top_n(15)
+# Selecting by Fee_Wted_2023
+
+Passive_LowFees_Past <- Passive_Fees_Past %>%
+  arrange(Fee_Wted_2023) %>%
+  top_n(-15)
+# Selecting by Fee_Wted_2023
+
+Passive_LowFees_Past %>%
+  select(1:4,
+         6:7,
+         5, 8) %>%
+  
+  write_csv("data/results/passive/past_lowfees_passivefunds_firm.csv")
+
+```
+
+Next steps: * Group the data by firm and U.S. category group * Sum their adjusted assets * Sum their net assets * Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop and category group. * Count how many shareclasses their are for each category
+
+Next:
+
+Group by firm name
+Sum total share classes for each fund family
+Sum total adjusted assets
+Sum total net assets
+Calculate average fee for each fund family
+Calculate percent of assets each fund family has in each category group
+Filter:
+
+Firms with at least 10 share classes
+Firms with at least $1 in assets
+
+```{r Fees by Type of Passive Fund Holdings}
+
+Passive_Cat <- PassiveFunds %>% 
+  group_by(Firm.Name.Mod, US.Category.Group) %>% 
+  summarise(
+    Asst_Wted_Cat = sum(Asst_By_Fee_2023, na.rm = TRUE),
+    Sum_Assets_Cat = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    Fee_Wted_Cat = Asst_Wted_Cat / Sum_Assets_Cat,
+    Cat_Count = n()
+  ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  mutate(
+    ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
+    Sum_Assts_Wted = sum(Asst_Wted_Cat, na.rm = TRUE),
+    Sum_Assets = sum(Sum_Assets_Cat, na.rm = TRUE),
+    Fee_Wted = Sum_Assts_Wted / Sum_Assets,
+    pct_assets = (Sum_Assets_Cat / Sum_Assets) * 100
+  ) %>%
+  filter(ShareClass_Count >= 10 &
+           Sum_Assets > 0
+  )
+
+Passive_Cat_Sum <- Passive_Cat %>%
+  group_by(US.Category.Group) %>%  
+  summarise(
+    SHARECLASSES = sum(Cat_Count),
+    FEE = (sum(Asst_Wted_Cat)/sum(Sum_Assets_Cat)),
+    ASSETS = sum(Sum_Assets_Cat)
+  ) %>%  
+  mutate(
+    pct = round(ASSETS / sum(ASSETS)*100,2)
+  )
+
+Lowcost_Passive_Firms <- Passive_LowFees$Firm.Name.Mod
+
+Passive_Cat_Pct <- Passive_Cat %>%
+  select(Firm.Name.Mod, US.Category.Group,  Fee_Wted_Cat, pct_assets) %>% 
+  #spread(US.Category.Group, pct_assets) %>% 
+  # filter(
+  #   Firm.Name.Mod %in% Lowcost_Passive_Firms
+  #   ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  arrange(-pct_assets, .by_group = TRUE)
+
+write_csv(Passive_Cat_Pct, "data/results/passive/passivefunds_firm_category.csv")
+
+
+ ggplot(data = Passive_Cat_Pct, 
+         aes(fill = US.Category.Group, values = pct_assets)) +
+  geom_waffle(colour = "white",
+    n_rows = 10, size = 0.33,flip = TRUE, make_proportional = TRUE) +
+    facet_wrap(~Firm.Name.Mod) +
+  coord_equal() +
+  theme_minimal() +
+  theme_enhance_waffle() +
+  labs(title = "Type of Holdings in Passive Funds",
+       subtitle = "% of assets in each category type")
+ 
+ Passive_MSCat <- PassiveFunds %>% 
+  group_by(Firm.Name.Mod, Morningstar.Category) %>% 
+  summarise(
+    Asst_Wted_Cat_2022 = sum(Asst_By_Fee_2022, na.rm = TRUE),
+    Sum_Assets_Cat_2022 = sum(Net_Asst_2022_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2022 = Asst_Wted_Cat_2022 / Sum_Assets_Cat_2022,
+    Asst_Wted_Cat_2022 = sum(Asst_By_Fee_2022, na.rm = TRUE),
+    Sum_Assets_Cat_2022 = sum(Net_Asst_2022_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2022 = Asst_Wted_Cat_2022 / Sum_Assets_Cat_2022,
+    Asst_Wted_Cat_2023 = sum(Asst_By_Fee_2023, na.rm = TRUE),
+    Sum_Assets_Cat_2023 = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    Fee_Wted_Cat_2023 = Asst_Wted_Cat_2023 / Sum_Assets_Cat_2023,
+    Cat_Count = n()
+  ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  mutate(
+    ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
+    Sum_Assts_Wted_2022 = sum(Asst_Wted_Cat_2022, na.rm = TRUE),
+    Sum_Assets_2022 = sum(Sum_Assets_Cat_2022, na.rm = TRUE),
+    Fee_Wted_2022 = Sum_Assts_Wted_2022 / Sum_Assets_2022,
+    pct_assets_2022 = (Sum_Assets_Cat_2022 / Sum_Assets_2022) * 100,
+    Sum_Assts_Wted_2023 = sum(Asst_Wted_Cat_2023, na.rm = TRUE),
+    Sum_Assets_2023 = sum(Sum_Assets_Cat_2023, na.rm = TRUE),
+    Fee_Wted_2023 = Sum_Assts_Wted_2023 / Sum_Assets_2023,
+    pct_assets_2023 = (Sum_Assets_Cat_2023 / Sum_Assets_2023) * 100
+  )
+
+write_csv(Passive_MSCat,
+          "data/results/passive/MScat_passivefunds.csv")
+
+
+Passive_MSCat_Sum <- Passive_MSCat %>%
+  group_by(Morningstar.Category) %>%  
+  summarise(
+    SHARECLASSES = sum(Cat_Count),
+    FEE = round((sum(Asst_Wted_Cat_2023)/sum(Sum_Assets_Cat_2022)),2),
+    ASSETS = sum(Sum_Assets_Cat_2023)
+  ) %>%  
+  mutate(
+    pct = round(ASSETS / sum(ASSETS)*100,2),
+    RANK = rank(-FEE)
+  )
+
+
+Passive_MSCat_Pct <- Passive_MSCat %>%
+  select(
+    Firm.Name.Mod,
+    Morningstar.Category,
+    Cat_Count,
+    Sum_Assets_Cat_2023,
+    Sum_Assets_2023,
+    Fee_Wted_Cat_2023,
+    Fee_Wted_2023,
+    pct_assets_2023
+  ) %>%
+  # filter(Firm.Name.Mod %in% Lowcost_Passive_Firms) %>% 
+  group_by(Firm.Name.Mod) %>%
+  arrange(-Fee_Wted_2023, .by_group = TRUE)
+
+write_csv(Passive_MSCat_Pct,
+          "data/results/passive/MScat_passivefunds_highlow.csv")
+
+```
+
+```{r Fees by Share Class of Passive Fund Holdings}
+
+Passive_shareclass_type <- PassiveFunds %>% 
+  group_by(Firm.Name.Mod, Share.Class.Type) %>% 
+  summarise(
+    Asst_Wted_Cat = sum(Asst_By_Fee_2023, na.rm = TRUE),
+    Sum_Assets_Cat = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    Fee_Wted_Cat = Asst_Wted_Cat / Sum_Assets_Cat,
+    Cat_Count = n()
+  ) %>% 
+  group_by(Firm.Name.Mod) %>% 
+  mutate(
+    ShareClass_Count = sum(Cat_Count, na.rm = TRUE),
+    Sum_Assts_Wted = sum(Asst_Wted_Cat, na.rm = TRUE),
+    Sum_Assets = sum(Sum_Assets_Cat, na.rm = TRUE),
+    Fee_Wted = Sum_Assts_Wted / Sum_Assets,
+    pct_assets = (Sum_Assets_Cat / Sum_Assets) * 100
+    ) %>%
+  filter(ShareClass_Count >= 10 &
+           Sum_Assets > 0
+         )
+
+#Passive_shareclass_type_Pct <- Passive_Cat %>%
+#  select(Firm.Name.Mod, Share.Class.Type, pct_assets) %>% 
+#   #spread(Share.Class.Type, pct_assets) %>% 
+#  filter(
+#    Firm.Name.Mod %in% c("Fidelity Investments",
+#                      "Schwab Funds",
+#                      "Vanguard",
+#                      "TIAA Investments",
+#                      "BlackRock",
+#                      "State Street Global Advisors",
+#                      "Principal Funds",
+#                      "Columbia",
+#                      "Victory Capital",
+#                      "Hartford Mutual Funds")
+#     ) %>% 
+#   group_by(Firm.Name.Mod) %>% 
+#   arrange(-pct_assets, .by_group = TRUE)
+
+```
+
+Here I am looking at how many Passive share classes had fees that were cut and hiked or saw no change. I start by filtering out non-index funds and fees that are NA (blank) for 2023 and 2022. I also remove fees with a zero expense ratio for 2021 because we can’t calculate change with that base.
+
+Next I created a category (FeeChange) that puts the percent changes (continous) in buckets (categorical). After that I just count the buckets.
+
+Filter:
+
+Firms with at least 10 share classes
+Firms with at least $1 in assets
+
+
+```{r Fee changes among passive share classes}
+
+Passive_Shareclass <- Adjusted_Data %>%
+  filter(
+    Annual.Report.Adjusted.Expense.Ratio..Year2020 != 0 &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2022) &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Index..Fund == "Yes" &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  mutate(
+    FeeChange =
+      cut(
+        Pct_Change_2022_2023,
+        breaks = c(-Inf, -0.001, 0, Inf),
+        labels = c("Cut", "No Change", "Hike"),
+        include.lowest = TRUE,
+        right = TRUE
+      )
+    )
+
+Passive_Summary_Shareclass <- Passive_Shareclass %>%
+  group_by(Firm.Name.Mod,
+           FeeChange) %>%
+  summarise(count = n(),
+    Sum_Assets = sum(Net_Asst_2023_AVG, na.rm = TRUE),
+    ) %>%
+  group_by(Firm.Name.Mod) %>%
+  mutate(
+    total_assets = sum(Sum_Assets),
+    assets_pct = Sum_Assets/total_assets * 100,
+    total_count = sum(count),
+    count_pct = count / total_count * 100
+  ) %>% 
+  filter(
+    total_count >= 10 &
+      total_assets > 0
+    )
+## `summarise()` has grouped output by 'Firm.Name.Mod'. You can override using the
+## `.groups` argument.
+write_csv(
+  Passive_Summary_Shareclass,
+  "data/results/passive/shareclass_changes_passivefunds.csv"
+  )
+
+```
+
+Zooming out (general)
+
+Here I am looking at how many share classes had fees that were cut and hiked or saw no change.
+
+I start by filtering out fees that are NA (blank) for 2023 and 2022. I also remove fees with a zero expense ratio for 2021 because we can’t calculate change with that base.
+
+Next I create a category (FeeChange) that puts the percent changes (continuous) in buckets (categorical). After that I just count the buckets.
+
+```{r Fee changes among share classes (active & passive)}
+
+Shareclass <- Adjusted_Data %>%
+  filter(
+    Annual.Report.Adjusted.Expense.Ratio..Year2022 != 0 &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  mutate(
+    FeeChange =
+      cut(
+        Pct_Change_2022_2023,
+        breaks = c(-Inf,-0.001, 0, Inf),
+        labels = c("Cut", "No Change", "Hike"),
+        include.lowest = TRUE,
+        right = TRUE)
+    )
+
+write_csv(Shareclass,
+          "data/results/general/shareclass_fee_changes.csv"
+          )
+
+Summary_Shareclass <- Shareclass %>%
+  group_by(Firm.Name.Mod,
+           FeeChange,) %>%
+  summarise(count = n()
+            ) %>% 
+  group_by(Firm.Name.Mod
+  ) %>% 
+  mutate(
+    total_count = sum(count)
+  )
+
+# `summarise()` has grouped output by 'Firm.Name.Mod'. You can override using the
+# `.groups` argument.
+
+```
+
+Here I at look how deep firms slashed their expense ratios from 2022 to 2023. First, I removed rows with an expense ratio of zero in 2021 because I can’t calculate changes with that base. I also filter out expense ratios listed as NA (blank) for 2022 and 2023.
+
+Now I need to put the percent change in fees from 2022 to 2023 into buckets. I did that with the cut() function. Here’s a link for personal reference.
+
+```{r % change of share class fees from 2022 to 2023}
+
+Category <- Adjusted_Data %>%
+  select(1:20,
+         everything()) %>%
+  filter(
+    Annual.Report.Adjusted.Expense.Ratio..Year2022 != 0 &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2022) &
+      !is.na(Annual.Report.Adjusted.Expense.Ratio..Year2023) &
+      Investment.Type == "Open-End Fund"
+  ) %>%
+  mutate(
+    FeeChange =
+      cut(
+        Pct_Change_2021_2022,
+        breaks = c(-Inf, -50, -25, -10, -1, -0.01, 0, Inf),
+        labels = c("< -50", "-25 - -50", "-10 - -25", "-1 - 10", "0 - -1", "0", "> 0"),
+        include.lowest = TRUE,
+        right = TRUE
+      )
+  )
+
+write_csv(Category,
+          "data/results/shareclass_cuts_total.csv")
+
+Summary_Category <- Category %>%
+  group_by(FeeChange) %>%
+  summarise(count = n())
+
+datatable(Summary_Category)
+```
+
+
 ## Including Plots
 
 You can also embed plots, for example:
