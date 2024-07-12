@@ -14,7 +14,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r pulling the data from folder, and cleaning}
+```{r pulling the data from folder, echo=FALSE}
 library(tidyverse)
 library(lubridate)
 library(DT)
@@ -50,7 +50,7 @@ write_csv(data, "data/results/general/data_combined.csv")
 
 
 Final tally after following code: 19,057 rows, 197 columns
-```{r Data adjustments  }
+```{r Data adjustments, echo=FALSE}
 
 full <- read_csv("data/results/general/data_combined.csv",
                  guess_max = 20000)
@@ -96,7 +96,7 @@ write_csv(Adjusted_Data,
 ```
 
 
-```{r Active funds}
+```{r Active funds, echo=FALSE}
 
 
 ActiveFunds <- Adjusted_Data %>%
@@ -148,7 +148,7 @@ Active_LowFees <- Active_Fees %>%
 ```
 
 
-```{r summary data for active funds}
+```{r summary data for active funds, echo=FALSE}
 
 Active_Summary <- ActiveFunds %>% 
   ungroup() %>%
@@ -169,7 +169,7 @@ write_csv(Active_Summary,
           "data/results/active/fees_activefunds_summary.csv")
 ```
 
-```{r Fees by Type of Active Fund Category}
+```{r Fees by Type of Active Fund Category, echo=FALSE}
 
 Active_Cat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, US.Category.Group) %>% 
@@ -241,7 +241,7 @@ write_csv(Active_Cat_Pct,
           "data/results/active/cat_activefunds_highlow.csv")
 ```
 
-```{r Fees by Type of Morningstar Fund Category (ACTIVE)}
+```{r Fees by Type of Morningstar Fund Category (ACTIVE), echo=FALSE}
 Active_MSCat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, Morningstar.Category) %>% 
   summarise(
@@ -305,7 +305,7 @@ write_csv(Active_MSCat_Pct,
           "data/results/active/MScat_activefunds_highlow.csv")
 ```
 
-```{r Fee changes among active share classes}
+```{r Fee changes among active share classes, echo=FALSE}
 Active_Shareclass <- Adjusted_Data %>%
   filter(
     Annual.Report.Adjusted.Expense.Ratio..Year2022 != 0 &
@@ -353,7 +353,7 @@ write_csv(
 
 Now turning to Passive Fees:
 
-```{r Fund families with the lowest/highes fees across passive products}
+```{r Fund families with the lowest/highes fees across passive products, echo=FALSE}
 PassiveFunds <- Adjusted_Data %>%
   filter(
     Net_Asst_2023_AVG != 0 &
@@ -388,7 +388,7 @@ Passive_LowFees <- Passive_Fees %>%
   top_n(-10, Fee_Wted_2023)
 ```
 
-```{r Passive Summary}
+```{r Passive Summary , echo=FALSE}
 
 Passive_Summary <- PassiveFunds %>% 
   ungroup() %>%
@@ -467,7 +467,7 @@ Filter:
 Firms with at least 10 share classes
 Firms with at least $1 in assets
 
-```{r Fees by Type of Passive Fund Holdings}
+```{r Fees by Type of Passive Fund Holdings, echo=FALSE}
 
 Passive_Cat <- PassiveFunds %>% 
   group_by(Firm.Name.Mod, US.Category.Group) %>% 
@@ -589,7 +589,7 @@ write_csv(Passive_MSCat_Pct,
 
 ```
 
-```{r Fees by Share Class of Passive Fund Holdings}
+```{r Fees by Share Class of Passive Fund Holdings, echo=FALSE}
 
 Passive_shareclass_type <- PassiveFunds %>% 
   group_by(Firm.Name.Mod, Share.Class.Type) %>% 
@@ -641,7 +641,7 @@ Firms with at least 10 share classes
 Firms with at least $1 in assets
 
 
-```{r Fee changes among passive share classes}
+```{r Fee changes among passive share classes , echo=FALSE}
 
 Passive_Shareclass <- Adjusted_Data %>%
   filter(
@@ -696,7 +696,7 @@ I start by filtering out fees that are NA (blank) for 2023 and 2022. I also remo
 
 Next I create a category (FeeChange) that puts the percent changes (continuous) in buckets (categorical). After that I just count the buckets.
 
-```{r Fee changes among share classes (active & passive)}
+```{r Fee changes among share classes (active & passive), echo=FALSE}
 
 Shareclass <- Adjusted_Data %>%
   filter(
@@ -739,7 +739,7 @@ Here I at look how deep firms slashed their expense ratios from 2022 to 2023. Fi
 
 Now I need to put the percent change in fees from 2022 to 2023 into buckets. I did that with the cut() function. Here’s a link for personal reference.
 
-```{r % change of share class fees from 2022 to 2023}
+```{r % change of share class fees from 2022 to 2023, echo=FALSE}
 
 Category <- Adjusted_Data %>%
   select(1:20,
