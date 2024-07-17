@@ -8,11 +8,7 @@ date: "2024-07-09"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The bulk of this code (and the vast majority of comments/text between) were originally written by Adrian Garcia and modified for the 2023 fiscal year. His original code can be found here: https://adriandgarcia.github.io/fee_data_2022/
 
 ```{r pulling the data from folder, echo=FALSE}
 library(tidyverse)
@@ -95,6 +91,27 @@ write_csv(Adjusted_Data,
 
 ```
 
+Here I look at the fund families with the lowest and highest overall fees across active products. I filter out index funds and remove fees that are NA (blank) for 2023.
+
+Additions:
+
+Group the data by firm
+Count how many shareclasses each firm has
+Sum their net assets 2023
+Filter:
+
+Firms with at least 50 share classes
+Firms with at least $25 billion in assets in 2023
+
+Next steps:
+
+Group the data by firm
+Count how many shareclasses each firm has
+Sum their adjusted assets (individually) for 2021, 2022 and 2023
+Sum their net assets (individually) for 2011, 2022 and 2023
+Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop (individually) for 2021, 2022 and 2023
+
+
 
 ```{r Active funds, echo=FALSE}
 
@@ -147,6 +164,19 @@ Active_LowFees <- Active_Fees %>%
   top_n(-10, Fee_Wted_2023)
 ```
 
+Here I calculate the industry average net expense ratio, on an asset weighted basis for 2021, 2022 and 2023.
+
+I take ActiveFunds
+
+Next steps:
+
+Ungroup the data by firm
+Count how many shareclasses there are total
+Sum the adjusted assets (individually) for 2021, 2022 and 2023
+Sum their net assets (individually) for 2021, 2022 and 2023
+Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop (individually) for 2021, 2022 and 2023
+I drop the adjusted asset figures above and gather all the columns.
+
 
 ```{r summary data for active funds, echo=FALSE}
 
@@ -168,6 +198,25 @@ Active_Summary <- ActiveFunds %>%
 write_csv(Active_Summary,
           "data/results/active/fees_activefunds_summary.csv")
 ```
+
+Fees by Type of Active Fund Category
+Here I look at fund families’ fees for each U.S. category types for active funds. I pull in the filtered data from ActiveFunds.
+
+Next steps:
+
+Group the data by firm and U.S. category group
+Sum their adjusted assets (individually) for 2021, 2022 and 2023
+Sum their net assets (individually) for 2021 ,2022 and 2023
+Divide the total adjusted assets by the total net assets to calculate asset-weighted fees for each fund shop and category group (individually) for 2021 and 2022
+Count how many shareclasses there are for each category
+Next:
+
+Group by firm name
+Sum total share classes for each fund family
+Sum total adjusted assets
+Sum total net assets
+Calculate average fee for each fund family
+Calculate percent of assets each fund family has in each category group
 
 ```{r Fees by Type of Active Fund Category, echo=FALSE}
 
@@ -241,6 +290,26 @@ write_csv(Active_Cat_Pct,
           "data/results/active/cat_activefunds_highlow.csv")
 ```
 
+Fees by Type of Morningstar Fund Category (ACTIVE)
+Here I am looking at fund families’ fees for each Morningsar category types for active funds. I start by pulling in the filtered data from ActiveFunds.
+
+Next steps:
+
+Group the data by firm and Morningstar category group
+Sum their adjusted assets (individually) for 2021, 2022 and 2023
+Sum their net assets (individually) for 2021, 2022 and 2023
+Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop and category group (individually) for 2021
+and 2022
+Count how many shareclasses there are for each category
+Next:
+
+Group by firm name
+Sum total share classes for each fund family
+Sum total adjusted assets
+Sum total net assets
+Calculate average fee for each fund family
+Calculate percent of assets each fund family has in each category group
+
 ```{r Fees by Type of Morningstar Fund Category (ACTIVE), echo=FALSE}
 Active_MSCat <- ActiveFunds %>% 
   group_by(Firm.Name.Mod, Morningstar.Category) %>% 
@@ -305,6 +374,20 @@ write_csv(Active_MSCat_Pct,
           "data/results/active/MScat_activefunds_highlow.csv")
 ```
 
+Here’s a look at some of the above data. Full results saved as MScat_activefunds.csv in the data/results/active folder.
+
+--
+
+Fee changes among active share classes
+Here I am looking at how many active share classes had fees that were cut and hiked as well as saw no change. I start by filtering out non-index funds and fees that are NA (blank) for 2022 and 2023. I also remove fees with a zero expense ratio for 2022 because we can’t calculate change with that base.
+
+Next I create a category (FeeChange) that puts the percent changes (continous) in buckets (categorical). After that I just count the buckets.
+
+Filter:
+
+Firms with at least 50 share classes
+Firms with at least $25 billion in assets
+
 ```{r Fee changes among active share classes, echo=FALSE}
 Active_Shareclass <- Adjusted_Data %>%
   filter(
@@ -353,6 +436,24 @@ write_csv(
 
 Now turning to Passive Fees:
 
+* Fund families with the lowest/highes fees across passive products
+
+Here I look at the fund families with the lowest and highest overall fees across passive products. I start by filtering out non-index funds and removing fees that are NA (blank) for 2023.
+
+Filter:
+
+Firms with at least 10 share classes
+Firms with at least $1 in assets
+
+Next steps:
+
+Group the data by firm
+Sum their adjusted assets
+Sum their net assets
+Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop.
+
+I select the top and bottom 15 fund families based on the results.
+
 ```{r Fund families with the lowest/highes fees across passive products, echo=FALSE}
 PassiveFunds <- Adjusted_Data %>%
   filter(
@@ -387,6 +488,25 @@ Passive_LowFees <- Passive_Fees %>%
   arrange(Fee_Wted_2023) %>%
   top_n(-10, Fee_Wted_2023)
 ```
+
+Here’s a look at some of the above data. Full results saved as fees_passivefunds_firm.csv in data/results/passive folder.
+
+--
+
+Summary:
+
+Here I the average net expense ratio, on an asset weighted basis, for 2021, 2022 and 2023.
+
+Next steps:
+
+Ungroup the data by firm
+Count how many shareclasses there are total
+
+Sum the adjusted assets (individually) for 2021, 2022 and 2023
+Sum their net assets (individually) for 2021, 2022 and 2023
+
+Divide the total adjusted assets by the total net asssets to calculate asset-weighted fees for each fund shop (individually) for 2021, 2022 and 2023
+I drop the adjusted asset figures above and gather all the columns.
 
 ```{r Passive Summary , echo=FALSE}
 
@@ -462,6 +582,8 @@ Sum total adjusted assets
 Sum total net assets
 Calculate average fee for each fund family
 Calculate percent of assets each fund family has in each category group
+
+
 Filter:
 
 Firms with at least 10 share classes
@@ -586,8 +708,11 @@ Passive_MSCat_Pct <- Passive_MSCat %>%
 
 write_csv(Passive_MSCat_Pct,
           "data/results/passive/MScat_passivefunds_highlow.csv")
-
 ```
+
+Fees by Share Class of Passive Fund Holdings
+
+Here I am looking at fund families’ fees for each share class types for passive funds. It’s the same as above except with share class type instead of U.S. category group.
 
 ```{r Fees by Share Class of Passive Fund Holdings, echo=FALSE}
 
@@ -770,14 +895,3 @@ Summary_Category <- Category %>%
 
 datatable(Summary_Category)
 ```
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-# ```{r pressure, echo=FALSE}
-# plot(pressure)
-# ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
