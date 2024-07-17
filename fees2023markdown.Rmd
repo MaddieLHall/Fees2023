@@ -5,14 +5,24 @@ date: "2024-07-09"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 The bulk of this code (and the vast majority of comments/text between) were originally written by Adrian Garcia and modified for the 2023 fiscal year. His original code can be found here: https://adriandgarcia.github.io/fee_data_2022/
 
-For this code to run correctly, I recommend working out of a directory with a "data" folder which itself contains a folder named "results," which must also contain two additional folders: "active" and "passive." (If it ain't broke, don't fix it)
+For this code to run correctly, I recommend working out of a directory with a "data" folder which itself contains a folder named "results," which must also contain three additional folders: "active", "general", and "passive." (If it ain't broke, don't fix it)
 
-```{r pulling the data from folder, echo=FALSE}
+We use the “Annual Report Net Expense Ratio.” Here’s why:
+
+https://web.archive.org/web/20221201041335/https://www.morningstar.com/articles/969612/one-expense-ratio-to-rule-them-all
+
+For the 2019 fee study from Morningstar the analyst says they used the lesser of Annual Report Net Expense Ratio and Annual Report Adjusted for each fund. “… adjusted excludes short interest, reverse repo rates, among other things that make it hard to compare fixed income and alt funds across firms. However, we didn’t JUST use adjusted because it’s not exhaustive of the whole universe we found – a handful of funds had missing adjusted expense ratios, but every one had a net expense ratio.”
+
+Because of that, we'll have to calculate some things ourselves.
+
+First, I pulled in the data from Morningstar Direct from Data was pulled from Morningstar Direct on July 10, 2023.
+
+```{r pulling the data from folder, echo=FALSE, message=FALSE}
 library(tidyverse)
 library(lubridate)
 library(DT)
@@ -40,14 +50,19 @@ data <- files %>%
   # the function READ from above
   reduce(full_join, by=)        # reduce with full_join into one dataframe
 
-warnings <- warnings(data)
-
 write_csv(data, "data/results/general/data_combined.csv")
 
 ```
 
+I made the following adjustments to the data:
 
-Final tally after following code: 19,057 rows, 197 columns
+Replaced spaces in the column names with periods.
+Removed fund of funds & money funds
+Combined the following firms Eaton Vance & Calvert Research and Management, SPDR State Street Global Advisors & “State Street Global Advisors, Nuveen and TIAA Investments
+Calculated the average assets for 2021, 2022 and 2023.
+Multiplied the annual average asset figures by the expense ratio (to use later for asset-weighted calculations).
+Calculated the percent change in net expense ratios from 2021 to 2022 and 2022 to 2023.
+
 ```{r Data adjustments, echo=FALSE}
 
 full <- read_csv("data/results/general/data_combined.csv",
