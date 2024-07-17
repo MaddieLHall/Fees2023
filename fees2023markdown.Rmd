@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The bulk of this code (and the vast majority of comments/text between) were originally written by Adrian Garcia and modified for the 2023 fiscal year. His original code can be found here: https://adriandgarcia.github.io/fee_data_2022/
 
+For this code to run correctly, I recommend working out of a directory with a "data" folder which itself contains a folder named "results," which must also contain two additional folders: "active" and "passive." (If it ain't broke, don't fix it)
+
 ```{r pulling the data from folder, echo=FALSE}
 library(tidyverse)
 library(lubridate)
