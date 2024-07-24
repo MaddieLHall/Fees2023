@@ -36,10 +36,10 @@ READ <- function(FILE) {
            trim_ws = TRUE,
            guess_max = nrow(read_csv(FILE)) -12,
            n_max = nrow(read_csv(FILE)) -12,
-           # col_types = cols(
-           #   `Inception \nDate` = col_date("%m/%d/%Y"),
-           #   `Listing \nDate`= col_date("%m/%d/%Y")
-           # )
+           col_types = cols(
+             `Inception \nDate` = col_date("%m/%d/%Y"),
+             `Listing \nDate`= col_date("%m/%d/%Y")
+           )
         ) %>%
     mutate(filename = basename(FILE)) %>%
     rename_all(make.names)
