@@ -543,7 +543,7 @@ Passive_Summary <- PassiveFunds %>%
   )
 
 write_csv(Passive_Summary,
-          "data/results/passive/fees_activefunds_summary.csv")
+          "data/results/passive/fees_passivefunds_summary.csv")
 
 datatable(Passive_Summary)
 ```
